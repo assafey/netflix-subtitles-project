@@ -1,1 +1,1 @@
-# netflix-subtitles-backend
+# netflix-subtitles-chrome-extension
