@@ -1,6 +1,12 @@
 // -------------- Services ----------------
+var SecretService = require("./services/SecretService");
+var secretService = new SecretService();
+
+var ImdbService = require("./Services/ImdbService");
+var imdbService = new ImdbService();
+
 var SubtitlesService = require("./services/SubtitlesService");
-var subtitlesService = new SubtitlesService();
+var subtitlesService = new SubtitlesService(secretService, imdbService);
 
 var DownloadManager = require("./services/DownloadManager");
 var downloadManager = new DownloadManager();
@@ -11,7 +17,7 @@ var subtitlesParser = new SubtitlesParser();
 subtitlesService.open()
     .then(() => console.log("Subtitles service successfully opened."))
     .catch(err => {
-        throw err;
+        console.error(err);
     });
 
 

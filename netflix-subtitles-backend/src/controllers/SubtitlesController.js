@@ -36,14 +36,19 @@ SubtitlesController.prototype._handleSubtitlesResponse = function(subtitlesResul
     if (subtitle !== null) {
         this._downloadSubtitle(subtitle)
             .then(content => response.json(this.subsParser.parse(content)))
-            .catch(err => response.status(500).json({ error: err }));
+            .catch(err => {
+                console.error(err);
+                response.json({ error: err })
+            });
     } else {
-        response.status(404).json({ error: "No subtitles for language: " + language });
+        console.info("No subtitles for language: " + language);
+        response.json({ error: "No subtitles for language: " + language });
     }
 };
 
 SubtitlesController.prototype._handleSubtitlesError = function(err, response) {
-    response.status(500).json({ error: err });
+    console.error(err);
+    response.json({ error: err });
 };
 
 SubtitlesController.prototype._getRelevantSubtitle = function(subtitlesResult) {

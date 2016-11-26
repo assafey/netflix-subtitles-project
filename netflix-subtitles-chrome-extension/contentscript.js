@@ -2,13 +2,23 @@ var textSize = "24px";
 var textColor = "white";
 var language = "heb";
 var timeOffset = 0;
+var disable = false;
 var started = false;
+
+var filterTexts = [
+    "opensubtitles",
+    "qsubs",
+    "torec"
+];
+
+console.log("Netflix subtitles extension loaded.")
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {    
     language = request.language;
     textSize = request.textSize;
     textColor = request.textColor;
     timeOffset = request.timeOffset;
+    disable = request.disable;
     sendResponse({});    
 });
 
@@ -18,18 +28,24 @@ chrome.runtime.sendMessage({
     function(response) {
         
         if (typeof response === "undefined") {
-            throw Error("no response from server.");
+            console.log("no response from server.");
         } else if (response.hasOwnProperty("error")){     
-            throw Error(response.error);
+            console.log(response.error);
         } else if (response.hasOwnProperty("result")) {
             var setting = response.result;
             textSize = setting.textSize;
             textColor = setting.textColor;
             language = setting.language;
             timeOffset = setting.timeOffset;
+            disable = setting.disable;
         }
 
-        setTimeout(start, 0);
+        if (!disable) {
+            console.log("Searching subtitles for language:", language);
+            setTimeout(start, 0);
+        } else {
+            console.log("Netflix subtitles extension is disabled.");
+        }
     }
 );
 
@@ -66,11 +82,13 @@ function waitForSeasonAndEpisodeTitle(startingTimestamp) {
     if (seasonAndEpisodeTitle === null) {
         
         var currentTimestamp = new Date().getTime();
-        if (startingTimestamp + (timeoutInSeconds * 1000) > currentTimestamp) {
-            setTimeout(waitForSeasonAndEpisodeTitle.bind(this, startingTimestamp), 1000);
-        } else {
-            document.dispatchEvent(createCustomEvent("title:timeout", {timeoutInSeconds: timeoutInSeconds}));
+        if (startingTimestamp + (timeoutInSeconds * 1000) <= currentTimestamp) {
+            startingTimestamp = new Date().getTime();            
+            console.log("Waiting for serie..."); // never timeout
+            //document.dispatchEvent(createCustomEvent("title:timeout", {timeoutInSeconds: timeoutInSeconds}));
         }
+
+        setTimeout(waitForSeasonAndEpisodeTitle.bind(this, startingTimestamp), 500);
 
     } else {
         document.dispatchEvent(createCustomEvent("title:ready", {title: seasonAndEpisodeTitle}));
@@ -112,14 +130,17 @@ function fetchSubtitles(serie, season, episode, callback) {
         }
     }, function(response) {
         if (typeof response === "undefined") {
-            throw Error("no response from server.");
+            console.log("no response from server.");
+            setTimeout(start, 0);
         } else if (response.hasOwnProperty("error")){     
-            throw Error(response.error);
+            console.log(response.error);
+            setTimeout(start, 0);
         } else if (response.hasOwnProperty("result")) {
-            console.log(language + " subtitles fetch sucessfully!");
+            console.log("Subtitles fetched sucessfully!");
             callback(JSON.parse(response.result));
         } else {
-            throw Error("no result in response from server.");
+            console.log("no result in response from server.");
+            setTimeout(start, 0);
         }
     });
 }
@@ -128,11 +149,22 @@ function waitForVideoElement(subtitles) {
     var videos = document.getElementsByTagName("video");
     if (videos.length > 0) {
         var video = videos[0];
+        
         appendSubtitlesContainer(video);                
-        video.addEventListener("timeupdate", function() {        
-            var subsConainter = document.getElementById("netflix-subs-container");                    
-            renderSubtitles(subsConainter, video.currentTime, subtitles);
+        video.addEventListener("timeupdate", onTimeUpdate);
+        video.addEventListener("abort", function() {
+            console.log("Player closed");
+            video.removeEventListener("timeupdate", onTimeUpdate);
+            setTimeout(start, 0);
         });
+        
+        function onTimeUpdate() {        
+            if (!disable) {
+                var subsConainter = document.getElementById("netflix-subs-container");                    
+                renderSubtitles(subsConainter, video.currentTime, subtitles);
+            }
+        }
+
     } else {
         setTimeout(function() {
             waitForVideoElement(subtitles);
@@ -141,18 +173,20 @@ function waitForVideoElement(subtitles) {
 }
 
 function appendSubtitlesContainer(video) {
-    var videoContainer = video.parentNode;
-    var subsConatiner = document.createElement("DIV");
-    subsConatiner.id = "netflix-subs-container";
-    subsConatiner.style.width = "80%";
-    subsConatiner.style.height = "20%";
-    subsConatiner.style.top = "75%";
-    subsConatiner.style.left = "10%";
-    subsConatiner.style.position = "inherit";    
-    subsConatiner.style.textAlign = "center";
-    videoContainer.appendChild(subsConatiner);
-    
-    alwaysCheckThatSubtitlesContainerIsAppended();
+    if (typeof video !== "undefined") {
+        var videoContainer = video.parentNode;
+        var subsConatiner = document.createElement("DIV");
+        subsConatiner.id = "netflix-subs-container";
+        subsConatiner.style.width = "80%";
+        subsConatiner.style.height = "20%";
+        subsConatiner.style.top = "75%";
+        subsConatiner.style.left = "10%";
+        subsConatiner.style.position = "inherit";    
+        subsConatiner.style.textAlign = "center";
+        videoContainer.appendChild(subsConatiner);
+        
+        alwaysCheckThatSubtitlesContainerIsAppended();
+    }
 }
 
 function alwaysCheckThatSubtitlesContainerIsAppended() {    
@@ -166,10 +200,23 @@ function alwaysCheckThatSubtitlesContainerIsAppended() {
 function renderSubtitles(subsConatiner, currentTime, subtitles) {  
     subsConatiner.style.fontSize = textSize;
     subsConatiner.style.color = textColor;    
-    var text = findSubtitleNaively(currentTime, subtitles);
-    if (text !== null) {  
-        subsConatiner.innerHTML = "<b>" + text + "<b>";
+    var subtitle = findSubtitleNaively(currentTime, subtitles);
+    if (subtitle !== null) {        
+        subsConatiner.innerHTML = "<b>" + subtitle.text + "<b>";
+        clearSubtitle(subsConatiner, subtitle.end - subtitle.start, subtitle.text);
     }
+}
+
+function clearSubtitle(subsConatiner, seconds, text) {
+    if (typeof seconds === "undefined" && typeof text === "undefined") {
+        subsConatiner.innerHTML = "";
+    }
+
+    setTimeout(function() {
+        if (subsConatiner.innerHTML.indexOf(text) >= 0) {
+            subsConatiner.innerHTML = "";
+        }
+    }, seconds * 1000);
 }
 
 function findSubtitleNaively(currentTime, subtitles) {
@@ -177,11 +224,16 @@ function findSubtitleNaively(currentTime, subtitles) {
         var text = subtitles[idx].text;
         var start = subtitles[idx].start + parseInt(timeOffset, 10);
         var end = subtitles[idx].end + parseInt(timeOffset, 10);
-        if (currentTime >= start && currentTime <= end) {
-            return text;
+        if (currentTime >= start && currentTime <= end && !shouldFilterSubtitle(subtitles[idx])) {
+            return subtitles[idx];
         }
     }
 
     return null;
 }
 
+function shouldFilterSubtitle(subtitle) {
+    return filterTexts.some(function(text) {
+        return subtitle.text.toLowerCase().indexOf(text) >= 0;
+    });
+}

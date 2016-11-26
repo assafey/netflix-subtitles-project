@@ -11,12 +11,14 @@ function updateSetting() {
   var textColor = document.getElementById("text-color-select").value;
   var language = document.getElementById("language-select").value;
   var timeOffset = document.getElementById("offset-input").value;
+  var disable = document.getElementById("disable-checkbox").checked;
 
   var netflixSubtitlesSetting = {
     language: language,
     textSize: textSize,
     textColor: textColor,
-    timeOffset: timeOffset
+    timeOffset: timeOffset,
+    disable: disable
   };
 
   chrome.storage.local.set({ netflixSubtitlesSetting: netflixSubtitlesSetting }, function(){});
@@ -42,6 +44,7 @@ function restoreSetting() {
       document.getElementById("text-color-select").value = netflixSubtitlesSetting.textColor;
       document.getElementById("language-select").value = netflixSubtitlesSetting.language;
       document.getElementById("offset-input").value = netflixSubtitlesSetting.timeOffset;
+      document.getElementById("disable-checkbox").checked = netflixSubtitlesSetting.disable;
       updatePlayer(netflixSubtitlesSetting);
     }
   });

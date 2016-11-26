@@ -72,3 +72,7 @@ select {
 footer {
     height: 10px;
 }
+
+#disable-checkbox {
+    margin-left: 70px;
+}
