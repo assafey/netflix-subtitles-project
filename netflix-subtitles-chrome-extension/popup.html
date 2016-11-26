@@ -1,0 +1,54 @@
+<html>
+<head>
+
+  <link rel="stylesheet" type="text/css" href="popup.css">
+  <script type="text/javascript" src="popup.js"></script>
+
+</head>
+<body>
+
+  <div>
+    <label class="title">Setting:</label>
+    <hr>
+    <div class="setup">
+      <label>Language:</label>
+      <select id="language-select">
+        <option value="heb">Hebrew</option>
+        <option value="eng">English</option>
+        <option value="fre">French</option>
+      </select>
+    </div>
+    <div class="setup">
+      <label>Text Size:</label>
+      <select id="text-size-select">
+        <option value="20px">Petite</option>
+        <option value="22px">Small</option>
+        <option value="24px" selected>Normal</option>
+        <option value="26px">Medium</option>
+        <option value="28px">Large</option>
+        <option value="30px">Extra Large</option>
+        <option value="32px">Huge</option>
+      </select>
+    </div>
+    <div class="setup">
+      <label>Text Color:</label>
+      <select id="text-color-select">
+        <option value="white">White</option>
+        <option value="yellow">Yellow</option>
+        <option value="black">Black</option>
+        <option value="blue">Blue</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="setup">
+      <label>Subtitle Offset:</label>
+      <input type="text" id="offset-input" class="slider-text" value="0"><span class="seconds">sec<span>
+    </div>
+    <div class="setup">
+      <button id="update-button" class="update">DONE</button>
+    </div>
+    <footer></footer>
+  </div>
+
+</body>
+</html>

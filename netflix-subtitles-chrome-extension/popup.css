@@ -1,0 +1,74 @@
+body {
+    width: 220px;
+    height: 100px;
+}
+
+label {     
+    color: #636363;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    clear: both;
+}
+
+.title {
+    color: #2D2D2D;
+    font-weight: bold;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
+
+.setup {
+    margin-top: 10px;
+}
+
+select {
+    float: right;
+    width: 100px;
+}
+
+.slider {
+    width: 200px;
+    margin-left: 10px;     
+}
+
+.slider-text {
+    width: 30px;
+    text-align: center;
+    margin-left: 25px;
+    border-bottom-color: #b3b3b3;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-left-color: #b3b3b3;
+    border-left-style: solid;
+    border-left-width: 1px;
+    border-right-color: #b3b3b3;
+    border-right-style: solid;
+    border-right-width: 1px;
+    border-top-color: #b3b3b3;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-top-style: solid;
+    border-top-width: 1px;
+}
+
+.seconds {
+    color: #636363;
+    margin-left: 5px;
+}
+
+.update {
+    width: 220px;
+    height: 30px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #636363;
+    background-color: white;
+    border-color: #b3b3b3;
+    border-radius: 2px;
+    border-width: 1px;
+}
+
+footer {
+    height: 10px;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "netflix-subtitles-backend",
+  "version": "1.0.0",
+  "description": "Netflix subtitles backend service",
+  "author": "assafey",
+  "private": true,
+  "main": "index.js",
+  "license": "ISC",
+  "homepage": "https://github.com/assafey/netflix-subtitles-backend",
+  "scripts": {
+    "start": "node ./src/index.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "iconv-lite": "^0.4.15",
+    "opensubtitles-api": "^3.3.0",
+    "parse-srt": "^1.0.0-alpha"
+  },
+  "devDependencies": {}
+}
