@@ -14,7 +14,6 @@
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "iconv-lite": "^0.4.15",
-    "imdb-api": "^2.2.0",
     "opensubtitles-api": "^3.3.0",
     "parse-srt": "^1.0.0-alpha"
   },

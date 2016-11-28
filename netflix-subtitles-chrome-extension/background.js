@@ -20,10 +20,11 @@ function sendRequest(request, sendResponse) {
         if (this.readyState == 4) {
             if (this.status == 200) {
                 console.log("Subtitles recieved.")
-                if (this.responseText.hasOwnProperty("error")) {
-                    sendResponse({error: this.responseText.error});
+                var result = JSON.parse(this.responseText);
+                if (result.hasOwnProperty("error")) {
+                    sendResponse({error: result.error});
                 } else {
-                    sendResponse({result: this.responseText});
+                    sendResponse({result: result});
                 }
             } else {
                 console.log("Error:", this.statusText);

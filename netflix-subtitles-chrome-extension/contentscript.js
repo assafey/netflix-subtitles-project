@@ -22,38 +22,49 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({});    
 });
 
-chrome.runtime.sendMessage({
-        type: "getSetting"        
-    }, 
-    function(response) {
-        
-        if (typeof response === "undefined") {
-            console.log("no response from server.");
-        } else if (response.hasOwnProperty("error")){     
-            console.log(response.error);
-        } else if (response.hasOwnProperty("result")) {
-            var setting = response.result;
-            textSize = setting.textSize;
-            textColor = setting.textColor;
-            language = setting.language;
-            timeOffset = setting.timeOffset;
-            disable = setting.disable;
-        }
+fetchSetting(start);
 
-        if (!disable) {
-            console.log("Searching subtitles for language:", language);
-            setTimeout(start, 0);
-        } else {
-            console.log("Netflix subtitles extension is disabled.");
+function fetchSetting(cb) {
+    chrome.runtime.sendMessage({
+            type: "getSetting"        
+        }, 
+        function(response) {
+            
+            if (typeof response === "undefined") {
+                console.log("no response from server.");
+            } else if (response.hasOwnProperty("error")){     
+                console.log(response.error);
+            } else if (response.hasOwnProperty("result")) {
+                var setting = response.result;
+                textSize = setting.textSize;
+                textColor = setting.textColor;
+                language = setting.language;
+                timeOffset = setting.timeOffset;
+                disable = setting.disable;
+            }
+
+            if (!disable) {
+                console.log("Searching subtitles for language:", language);
+                setTimeout(cb, 0);
+            } else {
+                console.log("Netflix subtitles extension is disabled.");
+            }
         }
-    }
-);
+    );
+}
 
 function start() {
-    document.addEventListener("title:ready", function(data) {
-        var title = data.detail.title;
-        console.log("Serie:", getSerieName(), "Season:", getSeason(title), "Episode:", getEpisode(title));
-        fetchSubtitles(getSerieName(), getSeason(title), getEpisode(title), function(subtitles) {
+    document.addEventListener("ready:serie", function() {
+        var title = getSeasonAndEpisodeTitle();
+        console.log("Serie:", getSerieOrMovieName(), "Season:", getSeason(title), "Episode:", getEpisode(title));
+        fetchSerieSubtitles(getSerieOrMovieName(), getSeason(title), getEpisode(title), function(subtitles) {
+            waitForVideoElement(subtitles);
+        });
+    });
+
+    document.addEventListener("ready:movie", function() {        
+        console.log("Movie:", getSerieOrMovieName(), "Year:", getMovieYear());
+        fetchMovieSubtitles(getSerieOrMovieName(), getMovieYear(), function(subtitles) {
             waitForVideoElement(subtitles);
         });
     });
@@ -62,11 +73,15 @@ function start() {
         console.log("Timeout after", data.detail.timeoutInSeconds, "seconds");
     });
 
-    waitForSeasonAndEpisodeTitle(new Date().getTime());
+    waitForPlayer(new Date().getTime());
 }
 
-function getSerieName() {
+function getSerieOrMovieName() {
     return getElementTextByClass("name");
+}
+
+function getMovieYear() {
+    return getElementTextByClass("year");
 }
 
 function createCustomEvent(type, data) {
@@ -75,28 +90,57 @@ function createCustomEvent(type, data) {
     return evt;
 }
 
-function waitForSeasonAndEpisodeTitle(startingTimestamp) {
+function waitForPlayer(startingTimestamp) {
     var timeoutInSeconds = 10;
-    var seasonAndEpisodeTitle = getSeasonAndEpisodeTitle();
+    
+    var elementsList = getPlayerInfoElements();
+    if (isPlayerVisible(elementsList)) {
+        var elementsArray = [];
+        elementsList.forEach(function(element) {
+            elementsArray.push(element);
+        });
 
-    if (seasonAndEpisodeTitle === null) {
-        
+        if (isMovie(elementsArray)) {
+            document.dispatchEvent(createCustomEvent("ready:movie"));
+        } else if (isSerie(elementsArray)) {
+            document.dispatchEvent(createCustomEvent("ready:serie"));
+        } else {
+            console.log("ERROR: NOT SERIE AND NOT MOVIE (?!)");
+        }
+
+    } else {
         var currentTimestamp = new Date().getTime();
         if (startingTimestamp + (timeoutInSeconds * 1000) <= currentTimestamp) {
             startingTimestamp = new Date().getTime();            
-            console.log("Waiting for serie..."); // never timeout
-            //document.dispatchEvent(createCustomEvent("title:timeout", {timeoutInSeconds: timeoutInSeconds}));
+            console.log("Waiting for player...");        
         }
 
-        setTimeout(waitForSeasonAndEpisodeTitle.bind(this, startingTimestamp), 500);
-
-    } else {
-        document.dispatchEvent(createCustomEvent("title:ready", {title: seasonAndEpisodeTitle}));
-    }
+        setTimeout(waitForPlayer.bind(this, startingTimestamp), 500);
+    } 
 }
 
 function getSeasonAndEpisodeTitle() {
     return getElementTextByClass("playable-title");
+}
+
+function getPlayerInfoElements() {
+    return document.querySelectorAll("span.list-label");
+}
+
+function isPlayerVisible(elementsList) {
+    return elementsList.length > 0 && document.getElementsByClassName("player-title-evidence").length > 0;
+}
+
+function isMovie(playerInfoElementsArray) {
+    return playerInfoElementsArray.filter(function(label) { 
+        return label.innerText.indexOf("This movie is") >= 0; 
+    }).length > 0;
+}
+
+function isSerie(playerInfoElementsArray) {
+    return playerInfoElementsArray.filter(function(label) { 
+        return label.innerText.indexOf("This show is") >= 0; 
+    }).length > 0;
 }
 
 function getElementTextByClass(className) {
@@ -118,29 +162,37 @@ function getEpisode(title) {
     return episodeTitle;
 }
 
-function fetchSubtitles(serie, season, episode, callback) {
-    chrome.runtime.sendMessage({
-        type: "sendRequest",
-        url: "http://localhost:3000/sub/serie/" + language,
-        method: "POST",
-        body: {
+function fetchSerieSubtitles(serie, season, episode, callback) {
+    fetchSubtitles("serie", {
             serie: serie,
             season: season,
             episode: episode
-        }
+        }, callback);
+}
+
+function fetchMovieSubtitles(movie, year, callback) {
+    fetchSubtitles("movie", {
+            movie: movie,
+            year: year
+        }, callback);
+}
+
+function fetchSubtitles(type, body, callback) {
+    chrome.runtime.sendMessage({
+        type: "sendRequest",
+        url: "http://localhost:3000/sub/" + type + "/" + language,
+        method: "POST",
+        body: body
     }, function(response) {
         if (typeof response === "undefined") {
             console.log("no response from server.");
-            setTimeout(start, 0);
         } else if (response.hasOwnProperty("error")){     
             console.log(response.error);
-            setTimeout(start, 0);
         } else if (response.hasOwnProperty("result")) {
             console.log("Subtitles fetched sucessfully!");
-            callback(JSON.parse(response.result));
+            callback(response.result);
         } else {
             console.log("no result in response from server.");
-            setTimeout(start, 0);
         }
     });
 }
@@ -155,7 +207,7 @@ function waitForVideoElement(subtitles) {
         video.addEventListener("abort", function() {
             console.log("Player closed");
             video.removeEventListener("timeupdate", onTimeUpdate);
-            setTimeout(start, 0);
+            fetchSetting(start);
         });
         
         function onTimeUpdate() {        
@@ -194,7 +246,10 @@ function alwaysCheckThatSubtitlesContainerIsAppended() {
         appendSubtitlesContainer();
     }
 
-    setTimeout(alwaysCheckThatSubtitlesContainerIsAppended, 100);
+    var videos = document.getElementsByTagName("video");
+    if (videos.length > 0) {
+        setTimeout(alwaysCheckThatSubtitlesContainerIsAppended, 100);
+    }
 }
 
 function renderSubtitles(subsConatiner, currentTime, subtitles) {  

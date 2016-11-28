@@ -21,46 +21,46 @@ OpenSubtitlesService.prototype.open = function() {
 
     return new Promise((resolve, reject) => {
         this.openSubsApi.login()
-            .then(res => resolve())
-            .catch(err => reject(err));
+            .then(resolve)
+            .catch(err => reject("OpenSubs Connection ERROR: " + err));
     });
 };
 
 OpenSubtitlesService.prototype.getSerieSubtitles = function(subtitleInfo) {
     return new Promise((resolve, reject) => {
-            this.imdbService.getInfo(subtitleInfo.serie)
+            this.imdbService.getSerieInfo(subtitleInfo.serie)
                 .then(imdbInfo => {
                     this.openSubsApi.search({
                         sublanguageid: subtitleInfo.language,
-                        imdbid: imdbInfo.imdbid,
+                        imdbid: imdbInfo.imdbID,
                         season: subtitleInfo.season,
                         episode: subtitleInfo.episode,
                         extensions: SUBTITLE_EXTENSIONS,
                         limit: LIMIT,
                         query: subtitleInfo.serie
                     })
-                    .then(subtitles => resolve(subtitles))
-                    .catch(err => reject(err));
+                    .then(resolve)
+                    .catch(err => reject("OpenSubs ERROR: " + err));
                 })
-                .catch(err => reject(err));
+                .catch(err => reject("IMDB ERROR: " + JSON.stringify(err)));
     });
 };
 
 OpenSubtitlesService.prototype.getMovieSubtitles = function(subtitleInfo) {
     return new Promise((resolve, reject) => {
-        this.imdbService.getInfo(subtitleInfo.serie)
+        this.imdbService.getMovieInfo(subtitleInfo.movie, subtitleInfo.year)
             .then(imdbInfo => {
                 this.openSubsApi.search({
                     sublanguageid: subtitleInfo.language,
-                    imdbid: imdbInfo.imdbid,
+                    imdbid: imdbInfo.imdbID,
                     extensions: SUBTITLE_EXTENSIONS,
                     limit: LIMIT,
                     query: subtitleInfo.movie
                 })
-                .then(subtitles => resolve(subtitles))
-                .catch(err => reject(err));
+                .then(resolve)
+                .catch(err => reject("OpenSubs ERROR: " + err));
             })
-            .catch(err => reject(err));
+            .catch(err => reject("IMDB ERROR: " + JSON.stringify(err)));
     });
 };
 
