@@ -1,3 +1,4 @@
 node_modules/
 netflix-subtitles-backend/.secret
 npm-debug.log
+.env
