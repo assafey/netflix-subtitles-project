@@ -1,3 +1,5 @@
+var HOSTNAME = "https://netsubend.herokuapp.com";
+
 var textSize = "24px";
 var textColor = "white";
 var language = "heb";
@@ -180,7 +182,7 @@ function fetchMovieSubtitles(movie, year, callback) {
 function fetchSubtitles(type, body, callback) {
     chrome.runtime.sendMessage({
         type: "sendRequest",
-        url: "http://localhost:3000/sub/" + type + "/" + language,
+        url: HOSTNAME + "/sub/" + type + "/" + language,
         method: "POST",
         body: body
     }, function(response) {
