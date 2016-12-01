@@ -2,7 +2,7 @@
 var SecretService = require("./services/SecretService");
 var secretService = new SecretService();
 
-var ImdbService = require("./Services/ImdbService");
+var ImdbService = require("./services/ImdbService");
 var imdbService = new ImdbService();
 
 var SubtitlesService = require("./services/SubtitlesService");
