@@ -12,5 +12,7 @@ router.use(bodyParser.urlencoded({ extended: true })); // for parsing applicatio
 router.post('/sub/serie/:language', (req, res) => subtitlesController.getSerieSubtitles(req, res));
 router.post('/sub/movie/:language', (req, res) => subtitlesController.getMovieSubtitles(req, res));
 
+router.get('/hello', (req, res) => res.send("Netflix subtitles backend is alive."));
+
 // --------------- Server ------------------
 router.listen(3000);
