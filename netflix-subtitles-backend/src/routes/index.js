@@ -15,4 +15,4 @@ router.post('/sub/movie/:language', (req, res) => subtitlesController.getMovieSu
 router.get('/hello', (req, res) => res.send("Netflix subtitles backend is alive.").end());
 
 // --------------- Server ------------------
-router.listen(3000);
+router.listen(process.env.PORT || 3000);
