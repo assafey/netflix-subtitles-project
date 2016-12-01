@@ -1,2 +1,3 @@
-netflix-subtitles-backend/node_modules/
+node_modules/
 netflix-subtitles-backend/.secret
+npm-debug.log

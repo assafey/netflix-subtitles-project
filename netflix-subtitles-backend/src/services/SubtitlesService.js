@@ -2,7 +2,12 @@ const OS = require('opensubtitles-api');
 
 const LIMIT = 3;
 const SUBTITLE_EXTENSIONS = ['srt'];
-const SECRET_FILENAME = require.resolve("../../.secret");
+
+var argv = require('yargs').argv;
+
+if (argv.secret_file) {
+    const SECRET_FILENAME = require.resolve("../../.secret");
+}
 
 function OpenSubtitlesService(secretService, imdbService) {    
     this.secretService = secretService;
@@ -10,8 +15,16 @@ function OpenSubtitlesService(secretService, imdbService) {
 }
 
 OpenSubtitlesService.prototype.open = function() {
-    var secret = this.secretService.secret(SECRET_FILENAME);
-    
+    if (argv.secret_file) {
+        var secret = this.secretService.secret(SECRET_FILENAME);
+    } else {
+        secret = {
+            "username": process.env.OS_USERNAME,
+            "password": process.env.OS_PASSWORD,
+            "useragent": process.env.OS_USERAGENT
+        }
+    }
+
     this.openSubsApi = new OS({
         useragent: secret.useragent,
         username: secret.username,
