@@ -56,112 +56,92 @@ function fetchSetting(cb) {
 }
 
 function start() {
-    document.addEventListener("ready:serie", function() {
-        var title = getSeasonAndEpisodeTitle();
-        console.log("Serie:", getSerieOrMovieName(), "Season:", getSeason(title), "Episode:", getEpisode(title));
-        fetchSerieSubtitles(getSerieOrMovieName(), getSeason(title), getEpisode(title), function(subtitles) {
+    document.addEventListener("ready:serie", function(data) {
+        var serie = data.detail.serie;
+        var season = data.detail.season;
+        var episode = data.detail.episode;
+        console.log("Serie:", serie, "Season:", season, "Episode:", episode);
+        fetchSerieSubtitles(serie, season, episode, function(subtitles) {
             waitForVideoElement(subtitles);
         });
     });
 
-    document.addEventListener("ready:movie", function() {        
-        console.log("Movie:", getSerieOrMovieName(), "Year:", getMovieYear());
-        fetchMovieSubtitles(getSerieOrMovieName(), getMovieYear(), function(subtitles) {
+    document.addEventListener("ready:movie", function(data) {        
+        var movie = data.detail.movie;
+        var year = data.detail.year;
+        console.log("Movie:", movie, "Year:", year);
+        fetchMovieSubtitles(movie, year, function(subtitles) {
             waitForVideoElement(subtitles);
         });
     });
 
     document.addEventListener("title:timeout", function(data) {
-        console.log("Timeout after", data.detail.timeoutInSeconds, "seconds");
+        var timeoutInSeconds = data.detail.timeoutInSeconds;
+        console.log("Timeout after", timeoutInSeconds, "seconds");
     });
 
     waitForPlayer(new Date().getTime());
 }
 
-function getSerieOrMovieName() {
-    return getElementTextByClass("name");
-}
-
-function getMovieYear() {
-    return getElementTextByClass("year");
-}
-
-function createCustomEvent(type, data) {
+function dispatchCustomEvent(type, data) {
     var evt = document.createEvent("CustomEvent");
     evt.initCustomEvent(type, true, true, data);
-    return evt;
+    document.dispatchEvent(evt);
 }
 
 function waitForPlayer(startingTimestamp) {
     var timeoutInSeconds = 10;
     
-    var elementsList = getPlayerInfoElements();
-    if (isPlayerVisible(elementsList)) {
-        var elementsArray = [];
-        elementsList.forEach(function(element) {
-            elementsArray.push(element);
-        });
-
-        if (isMovie(elementsArray)) {
-            document.dispatchEvent(createCustomEvent("ready:movie"));
-        } else if (isSerie(elementsArray)) {
-            document.dispatchEvent(createCustomEvent("ready:serie"));
+    var infoElements = getVideoInfoElements();
+    if (isPlayerVisible(infoElements)) {
+        if (isMovie(infoElements)) {
+            dispatchCustomEvent("ready:movie", {
+                movie: getSerieOrMovieName(infoElements)
+            });
         } else {
-            console.log("ERROR: NOT SERIE AND NOT MOVIE (?!)");
+            dispatchCustomEvent("ready:serie", {
+                serie: getSerieOrMovieName(infoElements),
+                season: getSeason(infoElements),
+                episode: getEpisode(infoElements)
+            });
         }
-
     } else {
-        var currentTimestamp = new Date().getTime();
-        if (startingTimestamp + (timeoutInSeconds * 1000) <= currentTimestamp) {
-            startingTimestamp = new Date().getTime();            
-            console.log("Waiting for player...");        
-        }
-
-        setTimeout(waitForPlayer.bind(this, startingTimestamp), 500);
-    } 
+        console.log("Waiting for player...");
+        setTimeout(waitForPlayer.bind(startingTimestamp), 1000);
+    }
 }
 
-function getSeasonAndEpisodeTitle() {
-    return getElementTextByClass("playable-title");
+function getVideoInfoElements() {
+    return document.querySelectorAll(".player-status span");
 }
 
-function getPlayerInfoElements() {
-    return document.querySelectorAll("span.list-label");
+function isPlayerVisible(infoElements) {
+    return infoElements.length > 0;
 }
 
-function isPlayerVisible(elementsList) {
-    return elementsList.length > 0 && document.getElementsByClassName("player-title-evidence").length > 0;
+function isMovie(infoElements) {
+    return infoElements.length === 1;
 }
 
-function isMovie(playerInfoElementsArray) {
-    return playerInfoElementsArray.filter(function(label) { 
-        return label.innerText.indexOf("This movie is") >= 0; 
-    }).length > 0;
+function isSerie(infoElements) {
+    return infoElements.length === 3;
 }
 
-function isSerie(playerInfoElementsArray) {
-    return playerInfoElementsArray.filter(function(label) { 
-        return label.innerText.indexOf("This show is") >= 0; 
-    }).length > 0;
+function getSerieOrMovieName(infoElements) {
+    return infoElements[0].innerText;
 }
 
-function getElementTextByClass(className) {
-    var titles = document.getElementsByClassName(className);
-    return titles.length > 0 ? titles[0].innerText : null;
+function getSeason(infoElements) {
+    var seasonAndEpisodeText = infoElements[1].innerText;
+    var endOfSeasonText = seasonAndEpisodeText.indexOf(": ");
+    var startSeasonNumberText = "Season ".length;
+    return seasonAndEpisodeText.substring(startSeasonNumberText, endOfSeasonText);
 }
 
-function getSeason(title) {
-    var splitTitle = title.split(" ");
-    var seasonAndEpisode = splitTitle[0].split(":");
-    var seasonTitle = seasonAndEpisode[0].substring(1);
-    return seasonTitle;
-}
-
-function getEpisode(title) {
-    var splitTitle = title.split(" ");
-    var seasonAndEpisode = splitTitle[0].split(":");
-    var episodeTitle = seasonAndEpisode[1].substring(1);
-    return episodeTitle;
+function getEpisode(infoElements) {
+    var seasonAndEpisodeText = infoElements[1].innerText;
+    var startOfEpisodeNumber = seasonAndEpisodeText.indexOf("Ep. ");
+    return seasonAndEpisodeText.substring(startOfEpisodeNumber + "Ep. ".length);
 }
 
 function fetchSerieSubtitles(serie, season, episode, callback) {
